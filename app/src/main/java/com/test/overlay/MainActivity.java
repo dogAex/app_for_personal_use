@@ -1,4 +1,4 @@
-﻿package com.test.overlay;
+package com.test.overlay;
 
 import android.app.Activity;
 import android.content.Intent;
