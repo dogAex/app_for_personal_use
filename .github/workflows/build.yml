@@ -17,15 +17,14 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      
+    # 强行指定 Gradle 版本，避开云端默认太新的版本
     - name: Force Gradle 8.1.1
       run: |
         wget https://services.gradle.org/distributions/gradle-8.1.1-bin.zip
         unzip -q gradle-8.1.1-bin.zip
         echo "$PWD/gradle-8.1.1/bin" >> $GITHUB_PATH
 
+    # 直接利用系统自带的 SDK 编译
     - name: Build with Gradle
       run: gradle assembleDebug
       
