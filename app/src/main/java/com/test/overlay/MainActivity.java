@@ -132,7 +132,14 @@ class FieldRenderer implements GLSurfaceView.Renderer {
         GLES30.glBlendFunc(GLES30.GL_SRC_ALPHA, GLES30.GL_ONE);
     }
 
-    @Override public void onSurfaceChanged(GL10 gl, int width, int height) { GLES30.glViewport(0, 0, width, height); }
+    @Override 
+    public void onSurfaceChanged(GL10 gl, int width, int height) { 
+        GLES30.glViewport(0, 0, width, height); 
+        // 把屏幕分辨率传给 shader
+        GLES30.glUseProgram(program);
+        int resLoc = GLES30.glGetUniformLocation(program, "u_resolution");
+        GLES30.glUniform2f(resLoc, (float)width, (float)height);
+    }
     @Override public void onDrawFrame(GL10 gl) {
         GLES30.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
