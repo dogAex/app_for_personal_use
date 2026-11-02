@@ -30,13 +30,20 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void createOverlay() {
+     private void createOverlay() {
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        
+        // 终极防弹参数：透明、不获取焦点、不阻挡触摸、全屏
+        int layoutFlag = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE 
+                       | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE 
+                       | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                       | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                layoutFlag,
                 PixelFormat.TRANSLUCENT);
 
         glView = new GLSurfaceView(this);
@@ -49,7 +56,6 @@ public class MainActivity extends Activity {
         wm.addView(glView, params);
         finish();
     }
-}
 
 class FieldRenderer implements GLSurfaceView.Renderer {
     private int program;
