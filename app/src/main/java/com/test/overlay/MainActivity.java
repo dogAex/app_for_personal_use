@@ -33,31 +33,40 @@ public class MainActivity extends Activity {
     private void createOverlay() {
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         
-        // 终极防弹参数：透明、不获取焦点、不阻挡触摸、全屏
+        // 终极防卡死防穿透拦截参数
         int layoutFlag = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE 
                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE 
+                       | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                       | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+                       | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                       | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+                       | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
 
+        // 强行把尺寸设置为 1x1 像素！
+        // 这是一个奇招：渲染还是全屏（靠 glView 的 viewport 强行拉大），
+        // 但系统这层“透明的盾牌”只有 1 个像素，绝对挡不住你点游戏里的任何按钮！
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
+                1, 1, 
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE,
                 layoutFlag,
                 PixelFormat.TRANSLUCENT);
+
+        // 将画布移到屏幕最左上角，保证系统认为它不在视线中心
+        params.x = 0;
+        params.y = 0;
 
         glView = new GLSurfaceView(this);
         glView.setEGLContextClientVersion(3);
         glView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         glView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        
+        // 强行放大渲染视口，绕过 1x1 尺寸限制
         glView.setRenderer(new FieldRenderer());
         glView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
         wm.addView(glView, params);
         finish();
     }
-}
-
 class FieldRenderer implements GLSurfaceView.Renderer {
     private int program;
     private FloatBuffer vertexBuffer;
