@@ -63,20 +63,49 @@ class FieldRenderer implements GLSurfaceView.Renderer {
     private long startTime;
     private final String vertexShaderCode = "attribute vec4 vPosition; void main() { gl_Position = vPosition; }";
     private final String fragmentShaderCode =
-        "#version 300 es\nprecision highp float;\nout vec4 fragColor;\nuniform float u_time;\n" +
+        "#version 300 es\n" +
+        "precision highp float;\n" +
+        "out vec4 fragColor;\n" +
+        "uniform float u_time;\n" +
+        "uniform vec2 u_resolution;\n" +
         "void main() {\n" +
-        "  vec2 uv = gl_FragCoord.xy / vec2(1920.0, 1080.0);\n" +
-        "  float r = length(uv - 0.5);\n" +
-        "  float bosonic = sin(uv.x * 20.0 + u_time) * cos(uv.y * 20.0 + u_time);\n" +
-        "  float fermionic = sin(uv.x * 20.0 + u_time + 1.57) * cos(uv.y * 20.0 + u_time + 1.57);\n" +
-        "  float herm = abs((bosonic + fermionic) * (bosonic - fermionic));\n" +
-        "  float super_sym = 1.0 / (herm + 0.001);\n" +
-        "  float flux = 1.0 / (r * r + 0.01);\n" +
-        "  float intensity = flux * 0.0001 * super_sym;\n" +
-        "  vec3 color = vec3(1.0, 0.4, 0.1) * intensity * 0.7606;\n" +
-        "  fragColor = vec4(color, clamp(intensity, 0.0, 1.0));\n" +
+        "  // 归一化坐标与屏幕中心\n" +
+        "  vec2 uv = gl_FragCoord.xy / u_resolution;\n" +
+        "  vec2 center = vec2(0.5, 0.5);\n" +
+        "  vec2 delta = uv - center;\n" +
+        "  float dist = length(delta);\n" +
+        "  \n" +
+        "  // 1. 动态体积光 Raymarching（步进采样）\n" +
+        "  vec3 volColor = vec3(0.0);\n" +
+        "  float density = 0.0;\n" +
+        "  int numSteps = 32;\n" +
+        "  float stepSize = 1.0 / float(numSteps);\n" +
+        "  \n" +
+        "  for(int i = 0; i < numSteps; i++) {\n" +
+        "    float t = float(i) * stepSize;\n" +
+        "    // 从当前像素向中心反向步进\n" +
+        "    vec2 p = uv - delta * t * 2.0;\n" +
+        "    \n" +
+        "    // 2. 超弦干涉场与偏振驻波 (产生动态光斑)\n" +
+        "    float bosonic = sin(p.x * 20.0 + u_time) * cos(p.y * 20.0 + u_time);\n" +
+        "    float fermionic = sin(p.x * 20.0 + u_time + 1.57) * cos(p.y * 20.0 + u_time + 1.57);\n" +
+        "    float interference = abs((bosonic + fermionic) * (bosonic - fermionic));\n" +
+        "    \n" +
+        "    // 3. 体积光衰减系数（Mie 散射近似）\n" +
+        "    float mieScatter = 1.0 / (1.0 + dist * dist * 50.0);\n" +
+        "    \n" +
+        "    // 叠加能量\n" +
+        "    density += exp(-interference * 2.0) * mieScatter * stepSize;\n" +
+        "  }\n" +
+        "  \n" +
+        "  // 4. 亿万量纲极化调色 (红/蓝/紫 激光感)\n" +
+        "  vec3 color1 = vec3(0.8, 0.2, 1.0); // 紫色高能\n" +
+        "  vec3 color2 = vec3(0.2, 0.8, 1.0); // 蓝色康普顿\n" +
+        "  vec3 finalColor = mix(color1, color2, sin(u_time * 0.5) * 0.5 + 0.5) * density * 5.0;\n" +
+        "  \n" +
+        "  // 5. 输出 (Alpha 基于光强，实现穿透叠加)\n" +
+        "  fragColor = vec4(finalColor, clamp(density * 2.0, 0.0, 1.0));\n" +
         "}";
-
     public FieldRenderer() {
         float[] quad = { -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f };
         vertexBuffer = ByteBuffer.allocateDirect(quad.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
