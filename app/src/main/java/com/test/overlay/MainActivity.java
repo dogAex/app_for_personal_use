@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
         }
     }
 
-     private void createOverlay() {
+    private void createOverlay() {
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         
         // 终极防弹参数：透明、不获取焦点、不阻挡触摸、全屏
@@ -56,12 +56,19 @@ public class MainActivity extends Activity {
         wm.addView(glView, params);
         finish();
     }
+}
 
 class FieldRenderer implements GLSurfaceView.Renderer {
     private int program;
     private FloatBuffer vertexBuffer;
     private long startTime;
-    private final String vertexShaderCode = "attribute vec4 vPosition; void main() { gl_Position = vPosition; }";
+
+    private final String vertexShaderCode = 
+        "attribute vec4 vPosition; " +
+        "void main() { " +
+        "  gl_Position = vPosition; " +
+        "}";
+
     private final String fragmentShaderCode =
         "#version 300 es\n" +
         "precision highp float;\n" +
@@ -69,14 +76,12 @@ class FieldRenderer implements GLSurfaceView.Renderer {
         "uniform float u_time;\n" +
         "uniform vec2 u_resolution;\n" +
         "void main() {\n" +
-        "  // 归一化坐标与屏幕中心\n" +
         "  vec2 uv = gl_FragCoord.xy / u_resolution;\n" +
         "  vec2 center = vec2(0.5, 0.5);\n" +
         "  vec2 delta = uv - center;\n" +
         "  float dist = length(delta);\n" +
         "  \n" +
         "  // 1. 动态体积光 Raymarching（步进采样）\n" +
-        "  vec3 volColor = vec3(0.0);\n" +
         "  float density = 0.0;\n" +
         "  int numSteps = 32;\n" +
         "  float stepSize = 1.0 / float(numSteps);\n" +
@@ -106,6 +111,7 @@ class FieldRenderer implements GLSurfaceView.Renderer {
         "  // 5. 输出 (Alpha 基于光强，实现穿透叠加)\n" +
         "  fragColor = vec4(finalColor, clamp(density * 2.0, 0.0, 1.0));\n" +
         "}";
+
     public FieldRenderer() {
         float[] quad = { -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f };
         vertexBuffer = ByteBuffer.allocateDirect(quad.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -135,12 +141,13 @@ class FieldRenderer implements GLSurfaceView.Renderer {
     @Override 
     public void onSurfaceChanged(GL10 gl, int width, int height) { 
         GLES30.glViewport(0, 0, width, height); 
-        // 把屏幕分辨率传给 shader
         GLES30.glUseProgram(program);
         int resLoc = GLES30.glGetUniformLocation(program, "u_resolution");
         GLES30.glUniform2f(resLoc, (float)width, (float)height);
     }
-    @Override public void onDrawFrame(GL10 gl) {
+
+    @Override 
+    public void onDrawFrame(GL10 gl) {
         GLES30.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
         GLES30.glUseProgram(program);
